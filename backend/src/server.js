@@ -25,6 +25,11 @@ app.use("/api/inngest", serve({ client: inngest, functions }));
 app.use("/api/chat", chatRoutes);
 app.use("/api/sessions", sessionRoutes);
 
+
+app.get("/", (req, res) => {
+  res.status(200).json({ msg: "api is up and running" });
+});
+
 app.get("/health", (req, res) => {
   res.status(200).json({ msg: "api is up and running" });
 });
