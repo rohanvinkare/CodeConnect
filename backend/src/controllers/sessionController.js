@@ -7,6 +7,8 @@ export async function createSession(req, res) {
     const userId = req.user._id;
     const clerkId = req.user.clerkId;
 
+    console.log(req.body)
+
     if (!problem || !difficulty) {
       return res.status(400).json({ message: "Problem and difficulty are required" });
     }
@@ -36,6 +38,7 @@ export async function createSession(req, res) {
 
     res.status(201).json({ session });
   } catch (error) {
+    
     console.log("Error in createSession controller:", error.message);
     res.status(500).json({ message: "Internal Server Error" });
   }
