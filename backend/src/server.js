@@ -18,9 +18,28 @@ const __dirname = path.resolve();
 // middleware
 app.use(express.json());
 // credentials:true meaning?? => server allows a browser to include cookies on request
+
 // app.use(cors({ origin: ENV.CLIENT_URL, credentials: true }));
 
-app.use(cors({ origin: "*", credentials: true }));
+const allowedOrigins = [
+  ENV.CLIENT_URL,
+  "https://codeconnect-jmjp.onrender.com",
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps, curl, etc.)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      } else {
+        return callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
 
 
 app.use(clerkMiddleware()); // this adds auth field to request object: req.auth()
