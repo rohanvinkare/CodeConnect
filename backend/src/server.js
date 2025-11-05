@@ -22,7 +22,7 @@ app.use(express.json());
 // app.use(cors({ origin: ENV.CLIENT_URL, credentials: true }));
 
 const allowedOrigins = [
-  ENV.CLIENT_URL,
+  "http://localhost:5173",
   "https://codeconnect-jmjp.onrender.com",
 ];
 
