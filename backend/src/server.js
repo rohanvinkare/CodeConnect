@@ -1,86 +1,7 @@
-// import express from "express";
-// import path from "path";
-// import cors from "cors";
-// import { serve } from "inngest/express";
-// import { clerkMiddleware } from "@clerk/express";
-
-// import { ENV } from "./lib/env.js";
-// import { connectDB } from "./lib/db.js";
-// import { inngest, functions } from "./lib/inngest.js";
-
-// import chatRoutes from "./routes/chatRoutes.js";
-// import sessionRoutes from "./routes/sessionRoute.js";
-
-// const app = express();
-
-// const __dirname = path.resolve();
-
-// // middleware
-// app.use(express.json());
-// // credentials:true meaning?? => server allows a browser to include cookies on request
-
-// // app.use(cors({ origin: ENV.CLIENT_URL, credentials: true }));
-
-// const allowedOrigins = [
-//   "http://localhost:5173",
-//   "https://codeconnect-jmjp.onrender.com",
-// ];
-
-// app.use(
-//   cors({
-//     origin: function (origin, callback) {
-//       // Allow requests with no origin (like mobile apps, curl, etc.)
-//       if (!origin) return callback(null, true);
-//       if (allowedOrigins.includes(origin)) {
-//         return callback(null, true);
-//       } else {
-//         return callback(new Error("Not allowed by CORS"));
-//       }
-//     },
-//     credentials: true,
-//   })
-// );
-
-
-// app.use(clerkMiddleware()); // this adds auth field to request object: req.auth()
-
-// app.use("/api/inngest", serve({ client: inngest, functions }));
-// app.use("/api/chat", chatRoutes);
-// app.use("/api/sessions", sessionRoutes);
-
-
-// app.get("/", (req, res) => {
-//   res.status(200).json({ msg: "api is up and running" });
-// });
-
-// app.get("/health", (req, res) => {
-//   res.status(200).json({ msg: "api is up and running" });
-// });
-
-// // make our app ready for deployment
-// if (ENV.NODE_ENV === "production") {
-//   app.use(express.static(path.join(__dirname, "../frontend/dist")));
-
-//   app.get("/{*any}", (req, res) => {
-//     res.sendFile(path.join(__dirname, "../frontend", "dist", "index.html"));
-//   });
-// }
-
-// const startServer = async () => {
-//   try {
-//     await connectDB();
-//     app.listen(ENV.PORT, () => console.log("Server is running on port:", ENV.PORT));
-//   } catch (error) {
-//     console.error("💥 Error starting the server", error);
-//   }
-// };
-
-// startServer();
-
-
-// server.js
 import express from "express";
+import path from "path";
 import cors from "cors";
+import { serve } from "inngest/express";
 import { clerkMiddleware } from "@clerk/express";
 
 import { ENV } from "./lib/env.js";
@@ -89,41 +10,69 @@ import { inngest, functions } from "./lib/inngest.js";
 
 import chatRoutes from "./routes/chatRoutes.js";
 import sessionRoutes from "./routes/sessionRoute.js";
-import { serve } from "inngest/express";
 
 const app = express();
 
-// Middleware
-app.use(express.json());
+const __dirname = path.resolve();
 
-// Allow requests from ANY origin
+// middleware
+app.use(express.json());
+// credentials:true meaning?? => server allows a browser to include cookies on request
+
+// app.use(cors({ origin: ENV.CLIENT_URL, credentials: true }));
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://codeconnect-jmjp.onrender.com",
+];
+
 app.use(
   cors({
-    origin: "*", // allow any origin
-    credentials: false, // set to true if you use cookies for auth
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true); // mobile apps, curl
+      if (allowedOrigins.includes(origin)) {
+        callback(null, origin); // <-- important: return the origin, not `true`
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
   })
 );
 
-// Clerk auth middleware
-app.use(clerkMiddleware()); // adds req.auth()
 
-// Routes
+app.use(clerkMiddleware()); // this adds auth field to request object: req.auth()
+
 app.use("/api/inngest", serve({ client: inngest, functions }));
 app.use("/api/chat", chatRoutes);
 app.use("/api/sessions", sessionRoutes);
 
-// Health checks
-app.get("/", (req, res) => res.status(200).json({ msg: "API is up and running" }));
-app.get("/health", (req, res) => res.status(200).json({ msg: "API is healthy" }));
 
-// Start server
+app.get("/", (req, res) => {
+  res.status(200).json({ msg: "api is up and running" });
+});
+
+app.get("/health", (req, res) => {
+  res.status(200).json({ msg: "api is up and running" });
+});
+
+// make our app ready for deployment
+if (ENV.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "../frontend/dist")));
+
+  app.get("/{*any}", (req, res) => {
+    res.sendFile(path.join(__dirname, "../frontend", "dist", "index.html"));
+  });
+}
+
 const startServer = async () => {
   try {
     await connectDB();
-    app.listen(ENV.PORT, () => console.log(`Server running on port: ${ENV.PORT}`));
+    app.listen(ENV.PORT, () => console.log("Server is running on port:", ENV.PORT));
   } catch (error) {
     console.error("💥 Error starting the server", error);
   }
 };
 
 startServer();
+
