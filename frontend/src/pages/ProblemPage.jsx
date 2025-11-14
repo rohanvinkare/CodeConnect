@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { PROBLEMS } from "../data/problems";
@@ -22,132 +23,132 @@ function ProblemPage() {
   const [output, setOutput] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
 
+  const [editorSize, setEditorSize] = useState(65);
+  const [outputSize, setOutputSize] = useState(35);
+
   const currentProblem = PROBLEMS[currentProblemId];
 
-  // update problem when URL param changes
   useEffect(() => {
-    if (id && PROBLEMS[id]) {
-      setCurrentProblemId(id);
-      setCode(PROBLEMS[id].starterCode[selectedLanguage]);
-      setOutput(null);
-    }
+    if (!id || !PROBLEMS[id]) return;
+    setCurrentProblemId(id);
+    setCode(PROBLEMS[id].starterCode[selectedLanguage]);
+    setOutput(null);
+
+    setEditorSize(65);
+    setOutputSize(35);
   }, [id, selectedLanguage]);
 
   const handleLanguageChange = (e) => {
-    const newLang = e.target.value;
-    setSelectedLanguage(newLang);
-    setCode(currentProblem.starterCode[newLang]);
+    const lang = e.target.value;
+    setSelectedLanguage(lang);
+    setCode(currentProblem.starterCode[lang]);
     setOutput(null);
   };
 
-  const handleProblemChange = (newProblemId) => navigate(`/problem/${newProblemId}`);
+  const handleProblemChange = (newId) => navigate(`/problem/${newId}`);
 
   const triggerConfetti = () => {
-    confetti({
-      particleCount: 80,
-      spread: 250,
-      origin: { x: 0.2, y: 0.6 },
-    });
-
-    confetti({
-      particleCount: 80,
-      spread: 250,
-      origin: { x: 0.8, y: 0.6 },
-    });
+    confetti({ particleCount: 80, spread: 250, origin: { x: 0.2, y: 0.6 } });
+    confetti({ particleCount: 80, spread: 250, origin: { x: 0.8, y: 0.6 } });
   };
 
-  const normalizeOutput = (output) => {
-    // normalize output for comparison (trim whitespace, handle different spacing)
-    return output
+  const normalizeOutput = (out) =>
+    out
       .trim()
       .split("\n")
-      .map((line) =>
-        line
+      .map((l) =>
+        l
           .trim()
-          // remove spaces after [ and before ]
           .replace(/\[\s+/g, "[")
           .replace(/\s+\]/g, "]")
-          // normalize spaces around commas to single space after comma
           .replace(/\s*,\s*/g, ",")
       )
-      .filter((line) => line.length > 0)
+      .filter((l) => l.length)
       .join("\n");
-  };
 
-  const checkIfTestsPassed = (actualOutput, expectedOutput) => {
-    const normalizedActual = normalizeOutput(actualOutput);
-    const normalizedExpected = normalizeOutput(expectedOutput);
-
-    return normalizedActual == normalizedExpected;
-  };
+  const checkIfTestsPassed = (actual, expected) =>
+    normalizeOutput(actual) === normalizeOutput(expected);
 
   const handleRunCode = async () => {
     setIsRunning(true);
-    setOutput(null);
+
+    // Expand output panel
+    setEditorSize(40);
+    setOutputSize(60);
 
     const result = await executeCode(selectedLanguage, code);
     setOutput(result);
     setIsRunning(false);
 
-    // check if code executed successfully and matches expected output
+    if (!result.success) return toast.error("Code execution failed!");
 
-    if (result.success) {
-      const expectedOutput = currentProblem.expectedOutput[selectedLanguage];
-      const testsPassed = checkIfTestsPassed(result.output, expectedOutput);
+    const expected = currentProblem.expectedOutput[selectedLanguage];
+    const passed = checkIfTestsPassed(result.output, expected);
 
-      if (testsPassed) {
-        triggerConfetti();
-        toast.success("All tests passed! Great job!");
-      } else {
-        toast.error("Tests failed. Check your output!");
-      }
-    } else {
-      toast.error("Code execution failed!");
-    }
+    passed ? (triggerConfetti(), toast.success("All tests passed!")) : toast.error("Test failed!");
   };
 
   return (
-    <div className="h-screen bg-base-100 flex flex-col">
+    <div
+      className="h-screen flex flex-col overflow-hidden"
+      style={{
+        background: `
+          radial-gradient(circle at 35% 15%, rgba(60,90,255,0.08), transparent 60%),
+          radial-gradient(circle at 85% 95%, rgba(0,140,255,0.06), transparent 60%),
+          #05060A
+        `,
+      }}
+    >
       <Navbar />
 
-      <div className="flex-1">
+      {/* FULL HEIGHT PANEL LAYOUT */}
+      <div className="flex-1 overflow-hidden">
         <PanelGroup direction="horizontal">
-          {/* left panel- problem desc */}
-          <Panel defaultSize={40} minSize={30}>
-            <ProblemDescription
-              problem={currentProblem}
-              currentProblemId={currentProblemId}
-              onProblemChange={handleProblemChange}
-              allProblems={Object.values(PROBLEMS)}
-            />
+
+          {/* LEFT: PROBLEM (scroll inside only this column) */}
+          <Panel defaultSize={40} minSize={28}>
+            <div className="h-full overflow-y-auto">
+              <ProblemDescription
+                problem={currentProblem}
+                currentProblemId={currentProblemId}
+                onProblemChange={handleProblemChange}
+                allProblems={Object.values(PROBLEMS)}
+              />
+            </div>
           </Panel>
 
-          <PanelResizeHandle className="w-2 bg-base-300 hover:bg-primary transition-colors cursor-col-resize" />
+          <PanelResizeHandle className="w-2 bg-[#0A0F18] hover:bg-blue-400/40 cursor-col-resize border-l border-[#1A2333]" />
 
-          {/* right panel- code editor & output */}
+          {/* RIGHT: EDITOR + OUTPUT (scroll individually) */}
           <Panel defaultSize={60} minSize={30}>
             <PanelGroup direction="vertical">
-              {/* Top panel - Code editor */}
-              <Panel defaultSize={70} minSize={30}>
-                <CodeEditorPanel
-                  selectedLanguage={selectedLanguage}
-                  code={code}
-                  isRunning={isRunning}
-                  onLanguageChange={handleLanguageChange}
-                  onCodeChange={setCode}
-                  onRunCode={handleRunCode}
-                />
+
+              {/* EDITOR */}
+              <Panel size={editorSize} minSize={25}>
+                <div className="h-full overflow-hidden">
+                  <CodeEditorPanel
+                    selectedLanguage={selectedLanguage}
+                    code={code}
+                    isRunning={isRunning}
+                    onLanguageChange={handleLanguageChange}
+                    onCodeChange={setCode}
+                    onRunCode={handleRunCode}
+                  />
+                </div>
               </Panel>
 
-              <PanelResizeHandle className="h-2 bg-base-300 hover:bg-primary transition-colors cursor-row-resize" />
+              <PanelResizeHandle className="h-2 bg-[#0A0F18] hover:bg-blue-400/40 cursor-row-resize border-t border-[#1A2333]" />
 
-              {/* Bottom panel - Output Panel*/}
-
-              <Panel defaultSize={30} minSize={30}>
-                <OutputPanel output={output} />
+              {/* OUTPUT */}
+              <Panel size={outputSize} minSize={20}>
+                <div className="h-full overflow-hidden">
+                  <OutputPanel output={output} />
+                </div>
               </Panel>
+
             </PanelGroup>
           </Panel>
+
         </PanelGroup>
       </div>
     </div>
